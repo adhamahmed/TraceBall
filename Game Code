@@ -1,1 +1,171 @@
-# T
+<!DOCTYPE html>
+<html>
+ 
+<head>
+    <title>Trace Ball</title> 
+</head>
+
+<style>
+
+h1 {
+    color: fuchsia;
+    font-family: verdana;
+    font-size: 300%;
+}
+
+</style>
+
+    <body onload="Start()">
+        <center><h1>Escape the Enemy</h1><center>
+		
+        <canvas id="Space" width=1420 height=799></canvas>
+        <div id="Lives" style="margin-top: 15px; font-size: 30px">3 lives remaining</div>
+
+        <script>	
+		
+            var Gamer;
+            var Enemy;
+            var PlayerLives = 4;
+            var Lives = document.getElementById("Lives");
+            function Start() {
+                GameArea.start();
+                Gamer = new Entity(50, 50, "#0066ff", 1000, 500);
+                Enemy = new Entity(50, 50, "#ff3300", 240, 115);
+            }
+		//Declared the variables
+			
+            function Restart() {
+                GameArea.clear();
+                Gamer.x = 1000;
+                Gamer.y = 500;
+                Enemy.x = 240;
+                Enemy.y = 115;
+                Gamer.update();
+                Enemy.update();
+                setTimeout(updateGame,450);
+            }
+		//Sets the start position
+			
+	    
+            var GameArea = {
+                canvas : document.createElement("canvas"),
+                start : function() {
+                    var TheCanvas = document.getElementById("Space");
+                    this.canvas.width = TheCanvas.width;
+                    this.canvas.height = TheCanvas.height;
+                    this.canvas.style = "border:20px solid #000000";
+		    this.canvas.style = "background-color: #f5f5f0";
+                    this.context = this.canvas.getContext("2d");
+                    TheCanvas.parentNode.replaceChild(this.canvas, TheCanvas);
+                    window.requestAnimationFrame(updateGame);
+					
+			//Sets the canvas up
+			
+					
+		    this.canvas.style.cursor = "none"; //Hides the mouse
+                    this.canvas.addEventListener('mousemove', function (e) {
+                        GameArea.plrX = e.offsetX;
+                        GameArea.plrY = e.offsetY;
+                    })
+                },
+            clear : function(){this.context.clearRect(0, 0, this.canvas.width, this.canvas.height)}
+		
+            }
+
+		//Adds an event listener to allow the mouse to be used
+
+
+	    //Setting up the maths
+			
+            function Entity(width, height, color, x, y) {
+                this.width = width;
+                this.height = height;
+                this.x = x;
+                this.y = y;
+                this.update = function() {
+                    ctx = GameArea.context;
+                    ctx.fillStyle = color;
+                    ctx.fillRect(this.x, this.y, this.width, this.height);
+                    this.relX = this.width/2+this.x;
+                    this.relY = this.height/2+this.y;
+                }
+		//Setting up the crash rule
+				
+                this.crashWith = function(otherobj) {
+                    var myleft = this.x;
+                    var myright = this.x + (this.width);
+                    var mytop = this.y;
+                    var mybottom = this.y + (this.height);
+                    var otherleft = otherobj.x;
+                    var otherright = otherobj.x + (otherobj.width);
+                    var othertop = otherobj.y;
+                    var otherbottom = otherobj.y + (otherobj.height);
+                    var crash = true;
+                    if ((mybottom < othertop) ||
+                        (mytop > otherbottom) ||
+                        (myright < otherleft) ||
+                        (myleft > otherright)) {
+                        	crash = false;
+                    }
+                    return crash;
+                }
+                
+            }
+			
+	    //Setting up the Enemy's "AI"
+            var EnemySpeed = 6.85;
+            var ThisFrame = 0;
+            var Hypotenuse = 0;
+            var EndFrame = 0;
+            function updateGame() {
+                if (Enemy.crashWith(Gamer)) {
+                    window.cancelAnimationFrame(ThisFrame);
+                    PlayerLives += -1; //Player loses life if crash = true
+                    if (PlayerLives <= 0) {
+                        Lives.innerHTML = "Game Over :(";
+                    } 
+		    else {
+                        Lives.innerHTML = PlayerLives + " lives remaining"; //Displays the number of lives on the page
+                        Restart(); 
+                    }
+                } 
+				
+		    //Setting up the coordinate system
+				else {
+                    GameArea.clear();
+                    if (GameArea.plrX && GameArea.plrY) {
+                        Gamer.x = GameArea.plrX-(Gamer.width/2);
+                        Gamer.y = GameArea.plrY-(Gamer.height/2);    
+                    }
+                    newEnemyCoords = GetNewCoords(Enemy,Gamer,ThisFrame);
+                    Enemy.x += newEnemyCoords.x;
+                    Enemy.y += newEnemyCoords.y;
+                    
+                    Gamer.update();
+                    Enemy.update();
+                    ThisFrame = window.requestAnimationFrame(updateGame); //Ensures my game isn't a rip-off of MS Paint
+                }
+                
+            }
+			
+	    //Setting up Pythagoras' theorem to work out the shortest distance between the Gamer (you) and the Enemy
+			
+            function GetNewCoords(startObj,destinationObj,ThisFrame) {
+                var dx = destinationObj.relX - startObj.relX;
+                var dy = destinationObj.relY - startObj.relY;
+                var Distance = Math.sqrt(dx * dx + dy * dy);
+                if (Distance) {
+                    dx /= Distance;
+                    dy /= Distance;
+                }
+                Hypotenuse = ThisFrame - EndFrame;
+                EndFrame = ThisFrame;
+                var x = dx * Hypotenuse * EnemySpeed;
+                var y = dy * Hypotenuse * EnemySpeed;
+                return {x,y};
+            }
+        </script>
+
+    </body>
+
+</html>
